@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Test</title>
+	<script type="text/javascript">
+		// 洗牌算法QUQ
+		// var map = [];
+		// function random(){
+		// 	var arr = [1,2,3,4,5,6,7,8,9,10];
+		// 	for(var i=0;i<10;i++){
+		// 		var tar = Math.floor(Math.random()*(10-i));
+		// 		var tmp = arr[10-i-1];
+		// 		arr[10-i-1]=arr[tar];
+		// 		arr[tar]=tmp;
+		// 	}
+		// 	for(i=0;i<10;i++) map[arr[i]-1][i]++;
+		// }
+		// function main(){
+		// 	for(var i=0;i<10;i++){
+		// 		map.push([]);
+		// 		for(var j=0;j<10;j++){
+		// 			map[i].push(0);
+		// 		}
+		// 	}
+		// 	for(var i=0;i<1000;i++) random();
+		// 	for(var i=0;i<10;i++){
+		// 		console.log(i+1,':');
+		// 		var sum=0;
+		// 		for(var j=0;j<10;j++){
+		// 			console.log(map[i][j]);
+		// 		}
+		// 		// console.log(sum);
+		// 	}
+		// }
+		// main();
+	</script>
+</head>
+<body>
+	<input type="file" id="file" multiple>
+	<input type="file" id="background">
+	<button id="begin" type="button">Begin</button>
+	<div id="box"></div>
+<script type="text/javascript">
+	Object.prototype.$ = function $(x){var that = (this==window?document:this);return Array.prototype.slice.call(that.querySelectorAll(x));};
+	function getCanvas(){
+		var tmp = document.createElement("canvas");
+		return [tmp, tmp.getContext("2d")];
+	}
+	var box = $("#box")[0],
+		upload = $("#file")[0],
+		bg = $("#background")[0],
+		begin = $("#begin")[0];
+	var canvas = document.createElement("canvas"),
+		ctx = canvas.getContext("2d");
+	var w_num = 13,
+		h_num = 13,
+		w_size = 640,
+		h_size = 360;
+	var w_av = Math.ceil(w_size/w_num),
+		h_av = Math.ceil(h_size/h_num);
+	var pic = [],
+		bg_pic = new Image(),
+		alpha = 0.3;
+	var flag1 = false,
+		flag2 = false;
+	console.log(upload);
+	upload.onchange= function(e){
+		console.log("change");
+		var files = e.target.files;
+		
+		for(var i=0,f;f=files[i];i++){
+			(function(i){
+				var tmp = new Image();
+				var reader = new FileReader();
+				reader.onload = function(e){
+					tmp.src = this.result;
+					tmp.width = w_av,tmp.height = h_av;
+					var tar = getCanvas();
+					tar[0].width = tmp.width, tar[0].height = tmp.height;
+					tar[1].drawImage(tmp,0,0,tmp.width, tmp.height);
+					pic.push(tar);
+					// document.body.appendChild(tar[0]);
+					if(pic.length>=w_num*h_num) flag1 = true;
+				}
+				reader.readAsDataURL(f);
+			})(i);
+		}
+	}
+	bg.onchange = function(e){
+		console.log("change");
+		var file = e.target.files;
+		var reader = new FileReader();
+		reader.onload = function(e){
+			bg_pic.src = this.result;
+			bg_pic.width = canvas.width = w_av*w_num, bg_pic.height = canvas.height = h_av*h_num;
+			flag2 = true;
+			ctx.drawImage(bg_pic,0,0,w_size,h_size);
+		}
+		reader.readAsDataURL(file[0]);
+	}
+	begin.onclick = function(){
+		if(flag1 && flag2){
+			console.log("OK");
+			var imgdata = ctx.getImageData(0,0,w_size,h_size);
+			var pre = -1,index = 0,tdata = null,pp=0;
+			for(var i=0;i<h_size;i++){
+				for(var j=0;j<w_size;j++){
+					var k = ((i%h_av)*(w_av)+(j%w_av))*4,
+						t = (i*w_size+j)*4;
+					index = Math.floor(i/h_av)*w_num+Math.floor(j/w_av);
+					try{
+						if(index!=pre){
+							pre=index;
+							tdata = pic[index][1].getImageData(0,0,w_av,h_av).data;
+						}
+					}
+					catch(e){
+						console.log(index,i,j);
+					}
+					imgdata.data[t]=Math.ceil(tdata[k]*alpha+imgdata.data[t]*(1-alpha));
+					imgdata.data[t+1]=Math.ceil(tdata[k+1]*alpha+imgdata.data[t+1]*(1-alpha));
+					imgdata.data[t+2]=Math.ceil(tdata[k+2]*alpha+imgdata.data[t+2]*(1-alpha));
+					imgdata.data[t+3]=Math.ceil(tdata[k+3]*alpha+imgdata.data[t+3]*(1-alpha));
+				}
+			}
+			ctx.putImageData(imgdata,0,0);
+		}
+		else {
+			console.log("Not OK");
+		}
+	}
+	function init(){
+		box.appendChild(canvas);
+	}
+	init();
+</script>
+</body>
+</html>
